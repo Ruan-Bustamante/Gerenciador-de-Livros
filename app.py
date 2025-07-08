@@ -69,6 +69,10 @@ def add_livro():
         INSERT INTO livros (titulo, autor, ano_publicacao)
         VALUES (%s, %s, %s) RETURNING id;
     ''', (titulo, autor, ano_publicacao))
+    livro_id = cursor.fetchone()[0]  # Pega o ID do livro recém-criado
+    conn.commit()
+    cursor.close()
+    conn.close()
 
     # Retorna o livro criado com o ID gerado pelo banco de dados
 
