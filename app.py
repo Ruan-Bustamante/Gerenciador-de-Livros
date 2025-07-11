@@ -61,7 +61,7 @@ def add_livro():
     novo_livro = request.get_json()
     titulo = novo_livro['titulo']
     autor = novo_livro['autor']
-    ano_publicacao = novo_livro.get('ano_publicacao')  # Ano de publicação é opcional
+    ano_publicacao = novo_livro.get['ano_publicacao']
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -78,7 +78,7 @@ def add_livro():
 
     return jsonify({"id": livro_id, "titulo": titulo, "autor": autor, "ano_publicacao": ano_publicacao}), 201 # 201 = Created
 
-@app.route('/livros/<int:id>', methods=['GET'])
+@app.route('/livros/<int:livro_id>', methods=['GET'])
 def get_livro(livro_id):
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=extras.RealDictCursor)
@@ -91,7 +91,7 @@ def get_livro(livro_id):
         return jsonify({"error": "Livro não encontrado"}), 404
     return jsonify(livro)
 
-@app.route('/livros/<int:id>', methods=['PUT'])
+@app.route('/livros/<int:livro_id>', methods=['PUT'])
 def update_livro(livro_id):
     dados_atualizados = request.get_json()
     titulo = dados_atualizados.get('titulo')
@@ -111,7 +111,7 @@ def update_livro(livro_id):
     if autor:
         update_fields.append("autor = %s")
         update_values.append(autor)
-    if ano_publicacao:
+    if ano_publicacao is not None:
         update_fields.append("ano_publicacao = %s")
         update_values.append(ano_publicacao)
     
@@ -140,7 +140,7 @@ def update_livro(livro_id):
 
     return jsonify(livro_retornado)
 
-@app.route('/livros/<int:id>', methods=['DELETE'])
+@app.route('/livros/<int:livro_id>', methods=['DELETE'])
 def delete_livro(livro_id):
     conn = get_db_connection()
     cursor = conn.cursor()
