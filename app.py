@@ -32,7 +32,7 @@ def init_db():
             id SERIAL PRIMARY KEY,
             titulo VARCHAR(255) NOT NULL,
             autor VARCHAR(255) NOT NULL,
-            ano_publicacao INT NOT NULL
+            ano_publicacao INT NULL
         );
     ''')
     conn.commit()
@@ -61,7 +61,7 @@ def add_livro():
     novo_livro = request.get_json()
     titulo = novo_livro['titulo']
     autor = novo_livro['autor']
-    ano_publicacao = novo_livro.get['ano_publicacao']
+    ano_publicacao = novo_livro.get('ano_publicacao')
 
     conn = get_db_connection()
     cursor = conn.cursor()
