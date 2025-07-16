@@ -1,66 +1,87 @@
 from flask import Blueprint, request, jsonify
 from src.models import (
-    get_all_livros_db,
-    add_livro_db,
-    get_livro_by_id_db,
-    update_livro_db,
-    delete_livro_db
+    Livro,
+    get_all_livros_orm,
+    add_livro_orm,
+    get_livro_by_id_orm,
+    update_livro_orm,
+    delete_livro_orm
 )
+from src.database import get_db_session
 
-# Define o Blueprint para as rotas de livros
 livros_bp = Blueprint('livros', __name__, url_prefix='/livros')
 
 @livros_bp.route('/', methods=['GET'])
 def get_livros():
-    livros = get_all_livros_db()
-    return jsonify(livros)
-
+    with get_db_session() as db:
+        livros = get_all_livros_orm(db)
+        return jsonify([{'id': l.id, 'titulo': l.titulo, 'autor': l.autor, 'ano_publicacao': l.ano_publicacao} for l in livros])
+    
 @livros_bp.route('/', methods=['POST'])
 def add_livro():
-    novo_livro = request.get_json()
-    if not novo_livro or 'titulo' not in novo_livro or 'autor' not in novo_livro:
-        return jsonify({"error": "Dados inválidos. 'titulo', 'autor' e 'ano_publicacao' são obrigatórios."}), 400
+    novo_livro_data = request.get_json()
+    if not novo_livro_data or 'titulo' not in novo_livro_data or 'autor' not in novo_livro_data:
+        return jsonify({'error': 'Dados inválidos. Titulo e autor são obrigatórios'}), 400
     
-    titulo = novo_livro['titulo']
-    autor = novo_livro['autor']
-    ano_publicacao = novo_livro['ano_publicacao']
+    titulo = novo_livro_data['titulo']
+    autor = novo_livro_data['autor']
+    ano_publicacao = novo_livro_data.get('ano_publicacao')
 
-    try:
-        ano_publicacao = int(ano_publicacao)
-    except ValueError:
-        return jsonify({"error": "Ano de publicação deve ser um número inteiro."}), 400
+    if ano_publicacao is not None:
+        try:
+            ano_publicacao = int(ano_publicacao)
+        except ValueError:
+            return jsonify({'error': 'Ano de publicação deve ser um número inteiro'}), 400
     
-    livro = add_livro_db(titulo, autor, ano_publicacao)
-    return jsonify(livro), 201
-
+    with get_db_session() as db:
+        livro_criado = add_livro_orm(db, titulo, autor, ano_publicacao)
+        return jsonify({
+            "id": livro_criado.id,
+            "titulo": livro_criado.titulo,
+            "autor": livro_criado.autor,
+            "ano_publicacao": livro_criado.ano_publicacao
+        }), 201
+    
 @livros_bp.route('/<int:livro_id>', methods=['GET'])
 def get_livro(livro_id):
-    livro = get_livro_by_id_db(livro_id)
-    if livro is None:
-        return jsonify({"error": "Livro não encontrado"}), 404
-    return jsonify(livro)
+    with get_db_session() as db:
+        livro = get_livro_by_id_orm(db, livro_id)
+        if livro is None:
+            return jsonify({'error': 'Livro não encontrado'}), 404
+        return jsonify({
+            "id": livro.id,
+            "titulo": livro.titulo,
+            "autor": livro.autor,
+            "ano_publicacao": livro.ano_publicacao
+        })
 
 @livros_bp.route('/<int:livro_id>', methods=['PUT'])
 def update_livro(livro_id):
-    dados_atualizados = request.get_json()
-    if not dados_atualizados:
-        return jsonify({"error": "Nenhum campo para atualizar fornecido."}), 400
-
-    # Validação básica para ano_publicacao se estiver presente
-    if 'ano_publicacao' in dados_atualizados:
+    update_data = request.get_json()
+    if not update_data:
+        return jsonify({'error': 'Nenhum campo para atualizar fornecido'}), 400
+    
+    if 'ano_publicacao' in update_data and update_data['ano_publicacao'] is not None:
         try:
-            dados_atualizados['ano_publicacao'] = int(dados_atualizados['ano_publicacao'])
+            update_data['ano_publicacao'] = int(update_data['ano_publicacao'])
         except ValueError:
-            return jsonify({"error": "Ano de publicação deve ser um número inteiro."}), 400
-
-    livro = update_livro_db(livro_id, dados_atualizados)
-    if livro is None:
-        return jsonify({"error": "Livro não encontrado ou nenhum campo válido para atualizar."}), 404
-    return jsonify(livro)
+            return jsonify({'error': 'Ano de publicação deve ser um número inteiro'}), 400
+    
+    with get_db_session() as db:
+        livro_atualizado = update_livro_orm(db, livro_id, update_data)
+        if livro_atualizado is None:
+            return jsonify({'error': 'Livro não encontrado'}), 404
+        return jsonify({
+            "id": livro_atualizado.id,
+            "titulo": livro_atualizado.titulo,
+            "autor": livro_atualizado.autor,
+            "ano_publicacao": livro_atualizado.ano_publicacao
+        })
 
 @livros_bp.route('/<int:livro_id>', methods=['DELETE'])
 def delete_livro(livro_id):
-    livro_deletado = delete_livro_db(livro_id)
-    if livro_deletado is None:
-        return jsonify({"error": "Livro não encontrado"}), 404
-    return jsonify({"message": "Livro deletado com sucesso", "livro": livro_deletado}), 200
+    with get_db_session() as db:
+        deleted = delete_livro_orm(db, livro_id)
+        if not deleted:
+            return jsonify({'error': 'Livro não encontrado'}), 404
+        return jsonify({'message':  f'Livro com ID {livro_id} excluído com sucesso.'}), 204

@@ -1,5 +1,5 @@
 from flask import Flask
-from src.database import init_db
+from src.database import create_tables
 from src.routes import livros_bp
 
 app = Flask(__name__)
@@ -10,7 +10,7 @@ app.register_blueprint(livros_bp)
 # Garante que o banco de dados esteja inicializado
 
 with app.app_context():
-    init_db()
+    create_tables()
 
 # Executa a aplicação
 
