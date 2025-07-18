@@ -1,6 +1,4 @@
-import psycopg2
-from psycopg2 import extras
-from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from config import DB_HOST, DB_NAME, DB_USER, DB_PASS
 import contextlib
